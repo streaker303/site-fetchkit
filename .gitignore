@@ -1,7 +1,7 @@
 node_modules/
 .pnpm-store/
 .idea/
-content-fetcher-adapters/
+site-fetchkit-adapters/
 .tmp-*/
 .tmp-*
 *.log

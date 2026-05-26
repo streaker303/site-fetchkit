@@ -3,6 +3,21 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Site fetching runtime for agent skills, with Playwright login state and browser/request helpers.",
+  "license": "MIT",
+  "keywords": [
+    "agent",
+    "cli",
+    "playwright",
+    "web-fetching",
+    "authenticated-fetch",
+    "site-skills",
+    "browser-automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/streaker303/site-fetchkit.git"
+  },
+  "homepage": "https://github.com/streaker303/site-fetchkit#readme",
   "bin": {
     "site-fetchkit": "./bin/site-fetchkit.mjs"
   },
