@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
 import { runInit } from "../commands/init.mjs";
-import { runInstallBrowser } from "../commands/install-browser.mjs";
 import { runCreateSite } from "../commands/create-site.mjs";
+import { runInstallBrowser } from "../commands/install-browser.mjs";
 import { runLogin } from "../commands/login.mjs";
-import { runCompleteLogin } from "../commands/complete-login.mjs";
 import { runFetch } from "../commands/fetch.mjs";
 import { runRun } from "../commands/run.mjs";
 
@@ -37,10 +36,9 @@ Usage:
 
 Commands:
   init              Install bundled skills and prepare the runtime
-  install-browser   Install the Playwright-managed Chromium binary
+  install-browser   Install Playwright Chromium (required for login)
   create-site       Scaffold a new site skill
-  login <site>      Open a visible browser for manual login
-  complete-login    Close login browser and save storageState
+  login <site>      Open a visible browser, wait for login, and save storageState
   fetch <url>       Fetch page content with the generic browser mode
   run <script>      Run a script with site-fetchkit module resolution
 
@@ -67,13 +65,11 @@ async function main() {
     case "init":
       return runInit(flags);
     case "install-browser":
-      return runInstallBrowser(flags);
+      return runInstallBrowser();
     case "create-site":
       return runCreateSite(flags, positional);
     case "login":
       return runLogin(flags, positional);
-    case "complete-login":
-      return runCompleteLogin(flags, positional);
     case "fetch":
       return runFetch(flags, positional);
     case "run":

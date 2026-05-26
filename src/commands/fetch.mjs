@@ -6,9 +6,7 @@ import * as runtime from "../runtime/index.mjs";
 async function genericFetch(input) {
   const site = input.site || "";
   const hasState = site ? runtime.getSiteState(site).exists : false;
-  const { browser, context } = hasState
-    ? await runtime.createBrowserContext(site)
-    : await runtime.createPublicBrowserContext();
+  const { browser, context } = await runtime.createBrowserContext(hasState ? site : null);
 
   try {
     const page = await context.newPage();

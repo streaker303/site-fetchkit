@@ -3,8 +3,9 @@ import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import { chromium } from "playwright";
+
 import * as runtime from "../runtime/index.mjs";
-import { chromiumExists, installChromium } from "./install-browser.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, "../..");
@@ -44,9 +45,37 @@ function installBundledSkills(skillsRoot, { force = false } = {}) {
   return results;
 }
 
+async function checkChrome() {
+  try {
+    const browser = await chromium.launch({ channel: "chrome", headless: true });
+    await browser.close();
+    process.stdout.write("[site-fetchkit] 系统 Chrome 可用 ✓\n");
+  } catch {
+    process.stdout.write(
+      "[site-fetchkit] 警告：未检测到系统 Google Chrome。无头抓取功能不可用，请安装 Google Chrome。\n"
+    );
+  }
+}
+
+async function checkPlaywrightChromium() {
+  try {
+    // 不指定 channel → 使用 Playwright 自带 Chromium（登录流程专用）
+    const browser = await chromium.launch({ headless: true });
+    await browser.close();
+    process.stdout.write("[site-fetchkit] Playwright Chromium 可用 ✓\n");
+  } catch {
+    process.stdout.write(
+      "[site-fetchkit] 警告：Playwright Chromium 未安装，登录功能不可用。\n  请先运行：site-fetchkit install-browser\n"
+    );
+  }
+}
+
 export async function runInit(flags) {
   runtime.ensureRuntimeLayout();
   process.stdout.write("[site-fetchkit] Runtime directories ready.\n");
+
+  await checkChrome();
+  await checkPlaywrightChromium();
 
   const skillsRoot = path.resolve(String(flags["skills-root"] || "").trim() || defaultSkillsRoot());
   fs.mkdirSync(skillsRoot, { recursive: true });
@@ -55,23 +84,6 @@ export async function runInit(flags) {
   });
   for (const result of skillResults) {
     process.stdout.write(`[site-fetchkit] Skill ${result.status}: ${result.targetDir}\n`);
-  }
-
-  if (chromiumExists()) {
-    process.stdout.write("[site-fetchkit] Chromium already installed.\n");
-  } else {
-    process.stdout.write("[site-fetchkit] Installing Playwright Chromium...\n");
-    try {
-      installChromium();
-    } catch (e) {
-      process.stderr.write(`Chromium 安装失败: ${e.message}\n`);
-      return 2;
-    }
-    if (!chromiumExists()) {
-      process.stderr.write("安装完成但 Chromium 路径仍不可用，请检查环境。\n");
-      return 2;
-    }
-    process.stdout.write("[site-fetchkit] Chromium installed.\n");
   }
 
   process.stdout.write("\n[site-fetchkit] Init complete. Ready to use.\n");

@@ -1,6 +1,5 @@
 import fs from "fs";
 
-import { AuthStateMissingError } from "./errors.mjs";
 import { ensureSiteLayout, getSitePaths } from "./paths.mjs";
 
 function readJson(file) {
@@ -24,14 +23,22 @@ export function getSiteState(site) {
 export function readStorageStateFile(site) {
   const paths = getSitePaths(site);
   if (!fs.existsSync(paths.stateFile)) {
-    throw new AuthStateMissingError(site, paths.stateFile);
+    throw new Error(
+      `站点 ${site} 尚未登录，请先执行: site-fetchkit login ${site} --url <登录入口 URL>`
+    );
   }
   return paths.stateFile;
 }
 
-export async function exportStorageState(site, context, metadata = {}) {
+export async function exportStorageState(site, contextOrState, metadata = {}) {
   const paths = ensureSiteLayout(site);
-  await context.storageState({ path: paths.stateFile });
+  if (typeof contextOrState?.storageState === "function") {
+    // 传入的是 BrowserContext，直接调用 .storageState() 写文件
+    await contextOrState.storageState({ path: paths.stateFile });
+  } else {
+    // 传入的是已提取的 storageState 对象（浏览器已关闭时的回退路径）
+    writeJson(paths.stateFile, contextOrState);
+  }
   const previous = readJson(paths.metadataFile) || {};
   const next = {
     site: paths.site,
@@ -44,4 +51,20 @@ export async function exportStorageState(site, context, metadata = {}) {
     ...paths,
     metadata: next,
   };
+}
+
+export async function withSiteLock(site, action) {
+  const paths = ensureSiteLayout(site);
+  let fd;
+  try {
+    fd = fs.openSync(paths.lockFile, "wx");
+  } catch {
+    throw new Error(`站点 ${site} 当前已有登录配置在执行，请稍后重试。`);
+  }
+  try {
+    return await action(paths);
+  } finally {
+    fs.closeSync(fd);
+    fs.rmSync(paths.lockFile, { force: true });
+  }
 }
