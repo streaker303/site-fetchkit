@@ -1,0 +1,29 @@
+{
+  "name": "site-fetchkit",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Site fetching runtime for agent skills, with Playwright login state and browser/request helpers.",
+  "bin": {
+    "site-fetchkit": "./bin/site-fetchkit.mjs"
+  },
+  "main": "./src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skills",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "check": "find bin src -name '*.mjs' -print0 | xargs -0 -n 1 node --check"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "playwright": "^1.57.0"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+.pnpm-store/
+.idea/
+content-fetcher-adapters/
+.tmp-*/
+.tmp-*
+*.log
+.DS_Store
