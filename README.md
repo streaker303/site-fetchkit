@@ -125,7 +125,6 @@ export async function fetchSiteContent({ url, site = "wiki" }) {
 
 ```bash
 npm run check    # 语法检查
-npm test         # node --test
 ```
 
 ## License
