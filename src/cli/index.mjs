@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 
+import fs from "fs";
+
 import { runInit } from "../commands/init.mjs";
 import { runCreateSite } from "../commands/create-site.mjs";
 import { runInstallBrowser } from "../commands/install-browser.mjs";
 import { runLogin } from "../commands/login.mjs";
 import { runFetch } from "../commands/fetch.mjs";
 import { runRun } from "../commands/run.mjs";
+import { runUpdate } from "../commands/update.mjs";
+
+const packageJson = JSON.parse(
+  fs.readFileSync(new URL("../../package.json", import.meta.url), "utf8")
+);
 
 function parseArgs(argv) {
   const flags = {};
@@ -13,6 +20,14 @@ function parseArgs(argv) {
   for (let i = 3; i < argv.length; i += 1) {
     const token = argv[i];
     if (!token.startsWith("--")) {
+      if (token === "-h") {
+        flags.h = true;
+        continue;
+      }
+      if (token === "-v") {
+        flags.v = true;
+        continue;
+      }
       positional.push(token);
       continue;
     }
@@ -41,14 +56,20 @@ Commands:
   login <site>      Open a visible browser, wait for login, and save storageState
   fetch <url>       Fetch page content with the generic browser mode
   run <script>      Run a script with site-fetchkit module resolution
+  update            Refresh bundled skills after upgrading the CLI package
 
 Options:
   --help, -h        Show help
+  --version, -v     Show version
 `);
 }
 
 const command = process.argv[2] || "";
 const { flags, positional } = parseArgs(process.argv);
+
+function printVersion() {
+  process.stdout.write(`${packageJson.version}\n`);
+}
 
 async function main() {
   if (!command || command === "--help" || command === "-h" || command === "help") {
@@ -56,8 +77,18 @@ async function main() {
     return 0;
   }
 
-  if (flags.help || flags.h) {
+  if (command === "--version" || command === "-v") {
+    printVersion();
+    return 0;
+  }
+
+  if (command !== "run" && (flags.help || flags.h)) {
     printHelp();
+    return 0;
+  }
+
+  if (command !== "run" && (flags.version || flags.v)) {
+    printVersion();
     return 0;
   }
 
@@ -74,6 +105,8 @@ async function main() {
       return runFetch(flags, positional);
     case "run":
       return runRun(flags, positional);
+    case "update":
+      return runUpdate(flags);
     default:
       printHelp();
       throw new Error(`未知命令：${command}`);

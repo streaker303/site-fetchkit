@@ -11,14 +11,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, "../..");
 const bundledSkillsRoot = path.join(packageRoot, "skills");
 
-function defaultSkillsRoot() {
+export function defaultSkillsRoot() {
   return (
     process.env.SITE_FETCHKIT_SKILLS_ROOT ||
     path.join(os.homedir(), ".agents", "skills")
   );
 }
 
-function installBundledSkills(skillsRoot, { force = false } = {}) {
+export function installBundledSkills(skillsRoot, { force = false } = {}) {
   const results = [];
   if (!fs.existsSync(bundledSkillsRoot)) {
     return results;

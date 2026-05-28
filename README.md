@@ -36,6 +36,24 @@ site-fetchkit init
 
 `init` 会准备 runtime 目录、检查系统 Chrome 与 Playwright Chromium、安装内置 skill 到 `~/.agents/skills/`。如提示缺少 Playwright Chromium，运行 `site-fetchkit install-browser`。
 
+## 查看版本与更新
+
+查看当前安装的 CLI 版本：
+
+```bash
+site-fetchkit -v
+```
+
+升级 CLI 包后，执行 `update` 刷新包内置 skills：
+
+```bash
+npm install -g site-fetchkit@latest
+site-fetchkit update
+site-fetchkit -v
+```
+
+`site-fetchkit update` 只会覆盖刷新本包内置的 `site-fetchkit`、`site-fetchkit-site-creator` 等 skills；不会更新 npm 包本身，不会修改登录态，也不会修改用户自己创建的站点 skill。自定义 skills 目录时可传 `--skills-root <path>`。
+
 ## 使用方式：对 Agent 说话
 
 ### 创建一个站点 skill
