@@ -1,6 +1,6 @@
 {
   "name": "site-fetchkit",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "module",
   "description": "Site fetching runtime for agent skills, with Playwright login state and browser/request helpers.",
   "license": "MIT",

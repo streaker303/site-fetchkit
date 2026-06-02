@@ -61,13 +61,19 @@ node --check ~/.agents/skills/<site>-operator/scripts/adapters/fetch-content.mjs
 site-fetchkit run ~/.agents/skills/<site>-operator/scripts/extract-content.mjs --url "<url>"
 ```
 
-如果提示需要登录，执行：
+如果提示需要登录，由 Agent 执行：
 
 ```bash
 site-fetchkit login <site> --url "<url>"
 ```
 
-`login` 会等待用户确认，保存登录态并关闭浏览器。完成后重试代表性 URL。
+`login` 会打开可见浏览器并等待 Agent 的外部确认信号，不要求用户在终端按 Enter。登录窗口打开后，停止当前验证并告诉用户：完成登录后回复“已登录”。用户回复后先执行：
+
+```bash
+site-fetchkit confirm-login <site>
+```
+
+看到“登录态已保存”后，再重试代表性 URL。
 
 6. 根据试跑结果调整 adapter：
 
@@ -81,7 +87,7 @@ site-fetchkit login <site> --url "<url>"
 - 输出生成的 skill 路径。
 - 输出主要入口命令。
 - 说明是否已完成语法检查和代表性 URL 验证。
-- 如果需要登录，说明已经打开登录页，并等待用户确认后保存登录态和重试。
+- 如果需要登录，说明已经打开登录页，并等待用户回复“已登录”；收到确认后执行 `site-fetchkit confirm-login <site>` 保存登录态和重试。
 - 不把验证结果当作最终内容获取任务；后续内容读取交给新生成的站点 skill。
 
 ## 边界与回退
@@ -92,7 +98,7 @@ site-fetchkit login <site> --url "<url>"
 - 不创建 `package.json`，脚本使用 `.mjs`。
 - 不创建空目录、评分、基准测试或平台专用 metadata。
 - 如果目标站点已有稳定 API，优先修改 `scripts/adapters/fetch-content.mjs` 为 API-first；如果是登录后的前端应用页面，改为浏览器 DOM 模式；否则保留通用 HTML 抓取。
-- 登录窗口打开后，必须等待用户明确确认“已登录”再保存登录态；用户确认前不主动保存登录态，也不主动关闭登录窗口。
+- 登录窗口打开后，必须等待用户明确确认“已登录”再执行 `site-fetchkit confirm-login <site>` 保存登录态；用户确认前不主动保存登录态，也不主动关闭登录窗口。
 
 ## 维护说明
 

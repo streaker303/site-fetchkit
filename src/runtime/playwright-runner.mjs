@@ -20,6 +20,33 @@ const NAVIGATOR_PROFILE = {
   vendor: "Google Inc.",
 };
 
+function normalizeBrowserName(input) {
+  const value = String(input || process.env.SITE_FETCHKIT_BROWSER || "chromium")
+    .trim()
+    .toLowerCase();
+  if (!value || value === "chromium" || value === "bundled" || value === "playwright") {
+    return "chromium";
+  }
+  if (value === "system" || value === "google-chrome") {
+    return "chrome";
+  }
+  return value;
+}
+
+function buildBrowserLaunchOptions(options = {}) {
+  const browserName = normalizeBrowserName(
+    options.browser || options.browserChannel || options.channel
+  );
+  const launchOptions = {
+    headless: options.headless ?? true,
+    args: [...BROWSER_ARGS, ...(options.args || [])],
+  };
+  if (browserName !== "chromium") {
+    launchOptions.channel = browserName;
+  }
+  return { browserName, launchOptions };
+}
+
 function buildUserAgent(browser) {
   let version = "136.0.0.0";
   if (browser && typeof browser.version === "function") {
@@ -64,7 +91,7 @@ export async function openSetupContext(site, options = {}) {
   const paths = ensureSiteLayout(site);
   // 使用 launchPersistentContext：Chrome 会把 cookies 持续写入 profileDir 磁盘
   // 即使用户关闭浏览器窗口或 Cmd+Q，登录态数据已落盘，可通过 extractStateFromProfile 恢复
-  // 需提前执行：site-fetchkit install-browser
+  // 登录流程默认使用 Playwright Chromium，需提前执行：site-fetchkit install-browser
   const context = await chromium.launchPersistentContext(paths.profileDir, {
     headless: false,
     args: [...BROWSER_ARGS, ...(options.args || [])],
@@ -98,11 +125,8 @@ export async function createRequestContext(site, options = {}) {
 }
 
 export async function createBrowserContext(site = null, options = {}) {
-  const browser = await chromium.launch({
-    channel: "chrome",
-    headless: options.headless ?? true,
-    args: [...BROWSER_ARGS, ...(options.args || [])],
-  });
+  const { launchOptions } = buildBrowserLaunchOptions(options);
+  const browser = await chromium.launch(launchOptions);
   const contextOptions = {
     ignoreHTTPSErrors: true,
     ...buildContextOptions(browser, options),

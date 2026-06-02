@@ -5,7 +5,7 @@ import fs from "fs";
 import { runInit } from "../commands/init.mjs";
 import { runCreateSite } from "../commands/create-site.mjs";
 import { runInstallBrowser } from "../commands/install-browser.mjs";
-import { runLogin } from "../commands/login.mjs";
+import { runLogin, runConfirmLogin } from "../commands/login.mjs";
 import { runFetch } from "../commands/fetch.mjs";
 import { runRun } from "../commands/run.mjs";
 import { runUpdate } from "../commands/update.mjs";
@@ -51,9 +51,10 @@ Usage:
 
 Commands:
   init              Install bundled skills and prepare the runtime
-  install-browser   Install Playwright Chromium (required for login)
+  install-browser   Install Playwright Chromium (required for login and default fetch)
   create-site       Scaffold a new site skill
-  login <site>      Open a visible browser, wait for login, and save storageState
+  login <site>      Open a visible browser and wait for Agent confirmation
+  confirm-login     Confirm the visible login flow and save storageState
   fetch <url>       Fetch page content with the generic browser mode
   run <script>      Run a script with site-fetchkit module resolution
   update            Refresh bundled skills after upgrading the CLI package
@@ -61,6 +62,12 @@ Commands:
 Options:
   --help, -h        Show help
   --version, -v     Show version
+
+Command notes:
+  fetch defaults to Playwright Chromium. Use --browser chrome only when system Chrome is required.
+  login no longer requires terminal Enter. After login, run confirm-login <site>.
+  login requests --url with the saved state by default. Use --validate-url <url> or --no-validate.
+  run must be used for external site scripts that import "site-fetchkit".
 `);
 }
 
@@ -101,6 +108,8 @@ async function main() {
       return runCreateSite(flags, positional);
     case "login":
       return runLogin(flags, positional);
+    case "confirm-login":
+      return runConfirmLogin(flags, positional);
     case "fetch":
       return runFetch(flags, positional);
     case "run":

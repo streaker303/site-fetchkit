@@ -24,7 +24,7 @@ export function readStorageStateFile(site) {
   const paths = getSitePaths(site);
   if (!fs.existsSync(paths.stateFile)) {
     throw new Error(
-      `站点 ${site} 尚未登录，请先执行: site-fetchkit login ${site} --url <登录入口 URL>`
+      `站点 ${site} 尚未登录，需要由 Agent 执行: site-fetchkit login ${site} --url <登录入口 URL>`
     );
   }
   return paths.stateFile;

@@ -45,6 +45,8 @@ export function getSitePaths(site) {
     stateFile: path.join(statesRoot, `${siteKey}.json`),
     metadataFile: path.join(metadataRoot, `${siteKey}.json`),
     lockFile: path.join(locksRoot, `${siteKey}.lock`),
+    loginConfirmFile: path.join(locksRoot, `${siteKey}.login-confirm`),
+    loginResultFile: path.join(locksRoot, `${siteKey}.login-result.json`),
   };
 }
 

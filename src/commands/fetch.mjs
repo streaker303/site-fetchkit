@@ -3,10 +3,37 @@ import path from "path";
 
 import * as runtime from "../runtime/index.mjs";
 
+async function createFetchBrowserContext(site, input) {
+  try {
+    return await runtime.createBrowserContext(site, { browser: input.browser });
+  } catch (error) {
+    const message = error.message || String(error);
+    if (/Executable doesn't exist|browserType\.launch/i.test(message)) {
+      throw new Error(
+        [
+          "浏览器启动失败。site-fetchkit fetch 默认使用 Playwright Chromium。",
+          "请先执行: site-fetchkit install-browser",
+          "如果必须使用系统 Google Chrome，可重试: site-fetchkit fetch <url> --browser chrome",
+          message,
+        ].join("\n")
+      );
+    }
+    throw error;
+  }
+}
+
 async function genericFetch(input) {
   const site = input.site || "";
   const hasState = site ? runtime.getSiteState(site).exists : false;
-  const { browser, context } = await runtime.createBrowserContext(hasState ? site : null);
+  if (site && !hasState) {
+    throw new Error(
+      `站点 ${site} 尚未登录，需要由 Agent 执行: site-fetchkit login ${site} --url <登录入口 URL>`
+    );
+  }
+  const { browser, context } = await createFetchBrowserContext(
+    hasState ? site : null,
+    input
+  );
 
   try {
     const page = await context.newPage();
@@ -38,7 +65,6 @@ async function genericFetch(input) {
         text: el?.innerText || "",
       };
     }, selector);
-
     return {
       source: "generic",
       site: site || "public",
@@ -51,8 +77,8 @@ async function genericFetch(input) {
       warnings: [],
     };
   } finally {
-    await context.close();
-    await browser.close();
+    await context.close().catch(() => {});
+    await browser.close().catch(() => {});
   }
 }
 
@@ -90,6 +116,7 @@ export async function runFetch(flags, positional) {
   const input = {
     url,
     site: String(flags.site || "").trim(),
+    browser: String(flags.browser || flags["browser-channel"] || "").trim(),
     waitSelector: String(flags["wait-selector"] || "").trim(),
     extractSelector: String(flags["extract-selector"] || "").trim(),
     timeout: flags.timeout,

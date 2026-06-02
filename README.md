@@ -19,11 +19,11 @@ site-fetchkit init
 
 ## 特性
 
-- **登录态持久化**：基于 Playwright `launchPersistentContext`，cookies / localStorage 自动落盘并跨进程复用。
+- **登录态持久化**：cookies / localStorage 登录一次，跨会话自动复用，无需重复登录。
 - **HTTP / 浏览器双通道**：按站点性质选择接口请求或页面渲染，避免无必要地启动浏览器。
 - **站点 Skill 生成器**：一句话生成可读、可改的站点 skill 骨架，后续基于真实页面行为继续迭代。
 - **Agent 原生集成**：内置 SKILL.md 可被 Claude Code / Copilot 等识别触发，无需手动构造 CLI 命令。
-- **零样板 Runtime**：站点脚本只需 `import "site-fetchkit"` 即可拿到带登录态的请求和浏览器上下文。
+- **零样板 Runtime**：站点脚本通过 `site-fetchkit run` 启动后，只需 `import "site-fetchkit"` 即可拿到带登录态的请求和浏览器上下文。
 
 ## 安装
 
@@ -34,7 +34,7 @@ npm install -g site-fetchkit
 site-fetchkit init
 ```
 
-`init` 会准备 runtime 目录、检查系统 Chrome 与 Playwright Chromium、安装内置 skill 到 `~/.agents/skills/`。如提示缺少 Playwright Chromium，运行 `site-fetchkit install-browser`。
+`init` 会准备 runtime 目录、安装内置 skill 到 `~/.agents/skills/`。如提示缺少浏览器，运行 `site-fetchkit install-browser`。
 
 ## 查看版本与更新
 
@@ -87,13 +87,13 @@ Agent 会自动调用 `site-fetchkit create-site` 生成骨架，然后试跑、
 https://wiki.example.com/pages/viewpage.action?pageId=123
 ```
 
-首次访问、登录态过期或站点返回未授权时，Agent 会打开一个可见浏览器窗口让你登录。完成登录后告知 Agent，登录态即被保存到 `~/.agents/state/site-fetchkit/`，后续访问同站点自动复用。
+首次访问、登录态过期或站点返回未授权时，Agent 会打开一个可见浏览器窗口让你登录。在浏览器里完成登录后，告诉 Agent”已登录”，Agent 会保存登录态并自动重试原请求。
 
 `states/` 中包含 cookies 与 localStorage，请勿提交到仓库。
 
 ## Runtime API
 
-站点脚本通过 `site-fetchkit run` 执行时可直接导入：
+站点脚本通过 `site-fetchkit run` 执行：
 
 ```js
 import {
@@ -103,11 +103,19 @@ import {
 } from "site-fetchkit";
 ```
 
+不要直接用 `node <script.mjs>` 运行站点脚本；`import "site-fetchkit"` 的解析依赖 `site-fetchkit run` 提供的环境。
+
 | 导出 | 说明 |
 | --- | --- |
 | `createRequestContext(site, options?)` | 创建带登录态的 Playwright `APIRequestContext`，适合接口优先的 adapter |
 | `createBrowserContext(site?, options?)` | 创建浏览器上下文；传 `site` 注入登录态，不传走公开上下文。需手动关闭 `context` 与 `browser` |
 | `htmlToText(html, options?)` | 去除 `script` / `style` / `noscript`，保留块级换行，解码常见 entity |
+
+`createBrowserContext(site?, options?)` 默认使用内置浏览器。确实需要系统 Chrome 时可传：
+
+```js
+await createBrowserContext("wiki", { browser: "chrome" });
+```
 
 接口优先的最小示例：
 
