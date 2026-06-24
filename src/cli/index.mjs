@@ -51,7 +51,7 @@ Usage:
 
 Commands:
   init              Install bundled skills and prepare the runtime
-  install-browser   Install Playwright Chromium (required for login and default fetch)
+  install-browser   Install Playwright Chromium, or CloakBrowser with --provider cloak
   create-site       Scaffold a new site skill
   login <site>      Open a visible browser and wait for Agent confirmation
   confirm-login     Confirm the visible login flow and save storageState
@@ -65,6 +65,7 @@ Options:
 
 Command notes:
   fetch defaults to Playwright Chromium. Use --browser chrome only when system Chrome is required.
+  fetch can use --browser cloak after installing cloakbrowser in the same Node environment.
   login no longer requires terminal Enter. After login, run confirm-login <site>.
   login requests --url with the saved state by default. Use --validate-url <url> or --no-validate.
   run must be used for external site scripts that import "site-fetchkit".
@@ -103,7 +104,7 @@ async function main() {
     case "init":
       return runInit(flags);
     case "install-browser":
-      return runInstallBrowser();
+      return runInstallBrowser(flags);
     case "create-site":
       return runCreateSite(flags, positional);
     case "login":

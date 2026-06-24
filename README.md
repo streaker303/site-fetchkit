@@ -36,6 +36,18 @@ site-fetchkit init
 
 `init` 会准备 runtime 目录、安装内置 skill 到 `~/.agents/skills/`。如提示缺少浏览器，运行 `site-fetchkit install-browser`。
 
+如果少数站点明确出现浏览器挑战页，可选安装 CloakBrowser 作为兜底浏览器。`site-fetchkit` 不默认依赖或分发 CloakBrowser 二进制；需要时先在同一 Node 环境安装 JS wrapper：
+
+```bash
+npm install -g cloakbrowser
+```
+
+上面只安装控制层，不会下载几百 MB 的浏览器二进制。如需避免首次使用 `--browser cloak` 或自动挑战页兜底时等待下载，可提前预下载二进制；不提前执行也可以，首次真正使用时会下载一次并缓存复用。
+
+```bash
+site-fetchkit install-browser --provider cloak
+```
+
 ## 查看版本与更新
 
 查看当前安装的 CLI 版本：
@@ -117,6 +129,14 @@ import {
 await createBrowserContext("wiki", { browser: "chrome" });
 ```
 
+如果已安装 CloakBrowser，也可以显式使用反检测浏览器：
+
+```js
+await createBrowserContext("wiki", { browser: "cloak" });
+```
+
+`site-fetchkit fetch` 默认只在页面内容命中明确挑战页特征时自动尝试一次 CloakBrowser 兜底；裸 HTTP 状态码不会单独触发。可用 `SITE_FETCHKIT_STEALTH=off` 关闭自动兜底。
+
 接口优先的最小示例：
 
 ```js
@@ -145,6 +165,7 @@ export async function fetchSiteContent({ url, site = "wiki" }) {
 
 - 高并发、大规模爬取。
 - 绕过验证码或访问控制。
+- 使用 CloakBrowser 兜底绕过验证码、账号权限、访问控制或未授权页面；返回登录或权限错误时，应处理登录态或页面权限。
 - 把所有站点解析规则塞进一个通用工具。
 
 ## 开发

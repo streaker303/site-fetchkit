@@ -55,6 +55,14 @@ site-fetchkit fetch "<url>" --site <site>
 site-fetchkit fetch "<url>" --browser chrome
 ```
 
+`fetch` 默认只在页面正文或 HTML 命中明确挑战页特征时，自动尝试一次 CloakBrowser 兜底；裸 `401` / `403` / `429` / `503` 不会单独触发。若需要显式使用 CloakBrowser，可执行：
+
+```bash
+site-fetchkit fetch "<url>" --browser cloak
+```
+
+CloakBrowser 需要用户在 `site-fetchkit` 所在的同一 Node 环境自行安装 `cloakbrowser` 包；首次真正使用时会下载二进制并缓存，内网环境可先执行 `site-fetchkit install-browser --provider cloak` 预下载或使用 CloakBrowser 自身环境变量指定预置二进制。若需关闭自动兜底，设置 `SITE_FETCHKIT_STEALTH=off`。
+
 3. 外部站点 skill 需要编排业务内容获取时，统一通过：
 
 ```bash
