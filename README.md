@@ -36,17 +36,7 @@ site-fetchkit init
 
 `init` 会准备 runtime 目录、安装内置 skill 到 `~/.agents/skills/`。如提示缺少浏览器，运行 `site-fetchkit install-browser`。
 
-如果少数站点明确出现浏览器挑战页，可选安装 CloakBrowser 作为兜底浏览器。`site-fetchkit` 不默认依赖或分发 CloakBrowser 二进制；需要时先在同一 Node 环境安装 JS wrapper：
-
-```bash
-npm install -g cloakbrowser
-```
-
-上面只安装控制层，不会下载几百 MB 的浏览器二进制。如需避免首次使用 `--browser cloak` 或自动挑战页兜底时等待下载，可提前预下载二进制；不提前执行也可以，首次真正使用时会下载一次并缓存复用。
-
-```bash
-site-fetchkit install-browser --provider cloak
-```
+少数站点会用浏览器挑战页（Cloudflare 等）拦截普通抓取。这类情况可选启用 CloakBrowser 作为反检测兜底浏览器，详见下文 [反检测兜底（CloakBrowser）](#反检测兜底cloakbrowser)。`site-fetchkit` 不默认依赖、也不分发 CloakBrowser 二进制。
 
 ## 查看版本与更新
 
@@ -99,7 +89,7 @@ Agent 会自动调用 `site-fetchkit create-site` 生成骨架，然后试跑、
 https://wiki.example.com/pages/viewpage.action?pageId=123
 ```
 
-首次访问、登录态过期或站点返回未授权时，Agent 会打开一个可见浏览器窗口让你登录。在浏览器里完成登录后，告诉 Agent”已登录”，Agent 会保存登录态并自动重试原请求。
+首次访问、登录态过期或站点返回未授权时，Agent 会打开一个可见浏览器窗口让你登录。在浏览器里完成登录后，告诉 Agent「已登录」，Agent 会保存登录态并自动重试原请求。
 
 `states/` 中包含 cookies 与 localStorage，请勿提交到仓库。
 
@@ -123,19 +113,11 @@ import {
 | `createBrowserContext(site?, options?)` | 创建浏览器上下文；传 `site` 注入登录态，不传走公开上下文。需手动关闭 `context` 与 `browser` |
 | `htmlToText(html, options?)` | 去除 `script` / `style` / `noscript`，保留块级换行，解码常见 entity |
 
-`createBrowserContext(site?, options?)` 默认使用内置浏览器。确实需要系统 Chrome 时可传：
+`createBrowserContext(site?, options?)` 默认使用内置浏览器。需要系统 Chrome 时传 `{ browser: "chrome" }`；已安装 CloakBrowser 时可传 `{ browser: "cloak" }` 使用反检测浏览器（见 [反检测兜底（CloakBrowser）](#反检测兜底cloakbrowser)）。
 
 ```js
 await createBrowserContext("wiki", { browser: "chrome" });
 ```
-
-如果已安装 CloakBrowser，也可以显式使用反检测浏览器：
-
-```js
-await createBrowserContext("wiki", { browser: "cloak" });
-```
-
-`site-fetchkit fetch` 默认只在页面内容命中明确挑战页特征时自动尝试一次 CloakBrowser 兜底；裸 HTTP 状态码不会单独触发。可用 `SITE_FETCHKIT_STEALTH=off` 关闭自动兜底。
 
 接口优先的最小示例：
 
@@ -154,6 +136,46 @@ export async function fetchSiteContent({ url, site = "wiki" }) {
 }
 ```
 
+## 反检测兜底（CloakBrowser）
+
+少数站点会用浏览器挑战页（Cloudflare「Just a moment…」、人机校验等）拦截普通抓取。可选启用 [CloakBrowser](https://github.com/CloakHQ/CloakBrowser)——一个内核级反指纹的 Chromium——作为兜底浏览器。它与默认的 Playwright Chromium、系统 Chrome 并列，仅按需使用。
+
+### 启用
+
+`site-fetchkit` 不默认依赖、也不分发 CloakBrowser 二进制。需要时在与 `site-fetchkit` 相同的 Node 环境安装 wrapper（仅控制层，约几百 KB，不含浏览器二进制）：
+
+```bash
+npm install -g cloakbrowser
+```
+
+首次真正使用时会自动下载一次浏览器二进制（约两百 MB）到 `~/.cloakbrowser` 并缓存复用。可提前预下载，避免首次使用时等待：
+
+```bash
+site-fetchkit install-browser --provider cloak
+```
+
+### 使用
+
+- 命令行显式指定：`site-fetchkit fetch "<url>" --browser cloak`
+- Runtime API 显式指定：`createBrowserContext(site, { browser: "cloak" })`
+- 自动兜底：`site-fetchkit fetch` 在页面**标题或正文命中明确挑战页特征**时，自动用 CloakBrowser 重试一次；裸 HTTP 状态码（401/403/429/503）不会单独触发，已登录站点的 401/403 视为权限问题也不触发；重试仍失败时返回首次结果并附带 warning，不中断。
+
+> 自动兜底仅作用于 `site-fetchkit fetch` 通用抓取。站点 skill 自行调用 `createRequestContext` / `createBrowserContext` 时不会自动继承，需要时在脚本里显式传 `{ browser: "cloak" }`。
+
+用 `SITE_FETCHKIT_STEALTH=off` 关闭自动兜底。CloakBrowser 模式不叠加本工具的 JS 指纹脚本，指纹完全由其二进制提供。
+
+### 内网 / 离线预置
+
+二进制默认从外网下载。内网或隔离环境可用 CloakBrowser 自身的环境变量预置：
+
+| 变量 | 作用 |
+| --- | --- |
+| `CLOAKBROWSER_BINARY_PATH` | 指向已预置的 Chromium，跳过下载 |
+| `CLOAKBROWSER_DOWNLOAD_URL` | 指向自建 / 内网镜像源 |
+| `CLOAKBROWSER_AUTO_UPDATE=false` | 关闭后台更新检查（cloak 分支已默认设为此值） |
+
+> CloakBrowser 用于对抗指纹检测，**不用于绕过验证码、账号权限或访问控制**；遇到登录 / 权限错误应处理登录态或页面权限，而非依赖它。
+
 ## 内置 Skill
 
 | Skill | 作用 |
@@ -165,7 +187,7 @@ export async function fetchSiteContent({ url, site = "wiki" }) {
 
 - 高并发、大规模爬取。
 - 绕过验证码或访问控制。
-- 使用 CloakBrowser 兜底绕过验证码、账号权限、访问控制或未授权页面；返回登录或权限错误时，应处理登录态或页面权限。
+- 依赖 CloakBrowser 兜底来绕过验证码、账号权限或未授权页面——它只对抗指纹检测，不解决权限问题。
 - 把所有站点解析规则塞进一个通用工具。
 
 ## 开发
